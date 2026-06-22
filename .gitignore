@@ -1,0 +1,15 @@
+/build/
+*.deb
+*.changes
+*.buildinfo
+*.dsc
+*.tar.*
+*.ko
+*.o
+*.mod
+*.mod.c
+Module.symvers
+modules.order
+.*.cmd
+__pycache__/
+*.pyc

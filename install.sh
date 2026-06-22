@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PACKAGE_NAME=gc-cameras
+PACKAGE_VERSION=0.1.1
+SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DKMS_SRC="/usr/src/${PACKAGE_NAME}-${PACKAGE_VERSION}"
+KREL="${1:-$(uname -r)}"
+MISSING_PACKAGES=()
+
+add_missing_package() {
+	local package="$1"
+	local existing
+
+	for existing in "${MISSING_PACKAGES[@]}"; do
+		[ "$existing" = "$package" ] && return 0
+	done
+
+	MISSING_PACKAGES+=("$package")
+}
+
+require_command() {
+	local command="$1"
+	local package="$2"
+
+	if ! command -v "$command" >/dev/null 2>&1; then
+		add_missing_package "$package"
+	fi
+}
+
+check_dependencies() {
+	require_command dkms dkms
+	require_command make build-essential
+	require_command gcc build-essential
+	require_command media-ctl v4l-utils
+	require_command v4l2-ctl v4l-utils
+	require_command python3 python3
+
+	if command -v python3 >/dev/null 2>&1; then
+		if ! python3 -c 'from PIL import Image' >/dev/null 2>&1; then
+			add_missing_package python3-pil
+		fi
+	fi
+
+	if [ ! -e "/lib/modules/${KREL}/build/Makefile" ]; then
+		add_missing_package "linux-headers-${KREL}"
+	fi
+
+	if [ "${#MISSING_PACKAGES[@]}" -gt 0 ]; then
+		echo "Missing required Ubuntu packages:" >&2
+		printf '  %s\n' "${MISSING_PACKAGES[@]}" >&2
+		echo >&2
+		echo "Install them first:" >&2
+		printf '  sudo apt update && sudo apt install' >&2
+		printf ' %q' "${MISSING_PACKAGES[@]}" >&2
+		echo >&2
+		exit 1
+	fi
+}
+
+if [ "$(id -u)" -ne 0 ]; then
+	echo "Run as root: sudo $0 [kernel-release]" >&2
+	exit 1
+fi
+
+check_dependencies
+
+if dkms status -m "${PACKAGE_NAME}" -v "${PACKAGE_VERSION}" | grep -q .; then
+	echo "==> Removing existing DKMS registration"
+	dkms remove -m "${PACKAGE_NAME}" -v "${PACKAGE_VERSION}" --all || true
+fi
+
+echo "==> Installing sources to ${DKMS_SRC}"
+rm -rf "${DKMS_SRC}"
+install -d "${DKMS_SRC}"
+cp -a "${SRC_DIR}/." "${DKMS_SRC}/"
+
+echo "==> Adding DKMS module"
+dkms add -m "${PACKAGE_NAME}" -v "${PACKAGE_VERSION}"
+
+echo "==> Building for ${KREL}"
+dkms build -m "${PACKAGE_NAME}" -v "${PACKAGE_VERSION}" -k "${KREL}"
+
+echo "==> Installing for ${KREL}"
+dkms install -m "${PACKAGE_NAME}" -v "${PACKAGE_VERSION}" -k "${KREL}"
+
+echo "==> Loading modules"
+modprobe -r gc8034 gti5035 intel_ipu6_isys intel_ipu6 ipu_bridge 2>/dev/null || true
+modprobe gti5035
+modprobe gc8034
+modprobe intel_ipu6_isys
+
+echo "==> Writing /etc/modules-load.d/gc-cameras.conf"
+cat >/etc/modules-load.d/gc-cameras.conf <<'EOF'
+gti5035
+gc8034
+intel_ipu6_isys
+EOF
+
+echo "==> Done"
+modinfo -k "${KREL}" -F filename gti5035 || true
+modinfo -k "${KREL}" -F filename gc8034 || true
+modinfo -k "${KREL}" -F filename ipu_bridge || true
