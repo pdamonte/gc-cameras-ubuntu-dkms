@@ -1,5 +1,11 @@
 # GC cameras Ubuntu DKMS
 
+> **Note:** the drivers packaged here do not build on kernel 7.2+
+> (`linux/of_gpio.h` was removed in `gti5035`) and report front/rear facing
+> swapped on the Chuwi Hi10 Max. Updated sources live in
+> [gc-cameras-akmod](https://github.com/pdamonte/gc-cameras-akmod)
+> (`src/gc-cameras-0.2/`); Fedora users should install that package instead.
+
 Combined Ubuntu DKMS package for GalaxyCore GC5035 / GCTI5035 and
 GC8034 / GCTI8034 camera sensors on Intel IPU6 systems.
 
