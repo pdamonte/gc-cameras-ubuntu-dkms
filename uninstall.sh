@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_NAME=gc-cameras
-PACKAGE_VERSION=0.1.1
+PACKAGE_VERSION=0.2.0
 
 if [ "$(id -u)" -ne 0 ]; then
 	echo "Run as root: sudo $0" >&2

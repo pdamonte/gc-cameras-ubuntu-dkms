@@ -1,3 +1,14 @@
+gc-cameras-dkms (0.2.0-1) stable; urgency=medium
+
+  * gti5035: build on kernel 7.2+ (drop linux/of_gpio.h and manual
+    gpio_free(); GPIOs are devm-managed).
+  * Fix camera facing on the Chuwi Hi10 Max: GC8034 is the rear camera,
+    GC5035 the front one. gc8034 now exposes read-only camera_orientation
+    and camera_sensor_rotation controls for libcamera.
+  * install.sh: remove older gc-cameras DKMS versions before installing.
+
+ -- pdamonte <pdamonte@users.noreply.github.com>  Sun, 08 Nov 2026 00:00:00 -0300
+
 gc-cameras-dkms (0.1.1-1) stable; urgency=medium
 
   * Initial combined Ubuntu DKMS package for GC5035, GC8034 and IPU bridge.

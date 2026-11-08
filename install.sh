@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_NAME=gc-cameras
-PACKAGE_VERSION=0.1.1
+PACKAGE_VERSION=0.2.0
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DKMS_SRC="/usr/src/${PACKAGE_NAME}-${PACKAGE_VERSION}"
 KREL="${1:-$(uname -r)}"
@@ -65,10 +65,12 @@ fi
 
 check_dependencies
 
-if dkms status -m "${PACKAGE_NAME}" -v "${PACKAGE_VERSION}" | grep -q .; then
-	echo "==> Removing existing DKMS registration"
-	dkms remove -m "${PACKAGE_NAME}" -v "${PACKAGE_VERSION}" --all || true
-fi
+# Remove every registered version (including older ones, e.g. 0.1.1).
+for old in $(dkms status -m "${PACKAGE_NAME}" 2>/dev/null | sed -n 's|^[^/,]*[/,] *\([^,:]*\).*|\1|p' | sort -u); do
+	echo "==> Removing DKMS ${PACKAGE_NAME}/${old}"
+	dkms remove -m "${PACKAGE_NAME}" -v "${old}" --all || true
+	rm -rf "/usr/src/${PACKAGE_NAME}-${old}"
+done
 
 echo "==> Installing sources to ${DKMS_SRC}"
 rm -rf "${DKMS_SRC}"

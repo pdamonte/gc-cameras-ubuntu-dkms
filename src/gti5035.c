@@ -22,7 +22,6 @@
 #include <linux/pm_runtime.h>
 #include <linux/of.h>
 #include <linux/of_graph.h>
-#include <linux/of_gpio.h>
 
 #include <linux/regulator/consumer.h>
 #include <linux/sysfs.h>
@@ -1325,21 +1324,7 @@ static int gc5035_configure_regulators(struct gc5035 *gc5035)
 
 static void free_gpio(struct gc5035 *sensor)
 {
-	struct device *dev = &sensor->client->dev;
-	unsigned int temp_gpio = -1;
-
-	dev_info(dev, "%s(%d) enter!\n", __func__, __LINE__);
-	if (!IS_ERR(sensor->reset_gpio)) {
-		temp_gpio = desc_to_gpio(sensor->reset_gpio);
-		dev_info(dev, "free gpio(%d)!\n", temp_gpio);
-		gpio_free(temp_gpio);
-	}
-
-	if (!IS_ERR(sensor->pwdn_gpio)) {
-		temp_gpio = desc_to_gpio(sensor->pwdn_gpio);
-		dev_info(dev, "free gpio(%d)!\n", temp_gpio);
-		gpio_free(temp_gpio);
-	}
+	/* GPIOs are devm-managed; released automatically. */
 }
 
 static int gc5035_parse_of(struct gc5035 *gc5035)
@@ -1402,7 +1387,8 @@ static int gc5035_probe(struct i2c_client *client)
 		return -ENOMEM;
 
 	gc5035->module_index = 0;
-	gc5035->module_facing = "back";
+	/* Chuwi Hi10 Max: the 5MP GC5035 is the front (user-facing) camera. */
+	gc5035->module_facing = "front";
 	gc5035->module_name = GTI5035_NAME;
 	gc5035->len_name = "default";
 	if (node) {

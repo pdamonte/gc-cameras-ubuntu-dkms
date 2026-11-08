@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_DIR="${1:-${ROOT_DIR}/build/deb}"
 PACKAGE="gc-cameras-dkms"
 DKMS_NAME="gc-cameras"
-DKMS_VERSION="0.1.1"
+DKMS_VERSION="0.2.0"
 DEB_VERSION="${DKMS_VERSION}-1"
 ARCH="all"
 
